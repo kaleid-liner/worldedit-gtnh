@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import net.minecraft.block.Block;
+
 import com.sk89q.jnbt.ByteArrayTag;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.DoubleTag;
@@ -130,23 +132,26 @@ public class SchematicWriter implements ClipboardWriter {
             blocks[index] = (byte) block.getType();
             blockData[index] = (byte) block.getData();
 
+            String name = Block.blockRegistry.getNameForObject(Block.blockRegistry.getObjectById(block.getType()));
+            Map<String, Tag> values = new HashMap<String, Tag>();
+            values.put("blockName", new StringTag(name));
+
             // Store TileEntity data
             CompoundTag rawTag = block.getNbtData();
             if (rawTag != null) {
-                Map<String, Tag> values = new HashMap<String, Tag>();
                 for (Entry<String, Tag> entry : rawTag.getValue()
                     .entrySet()) {
                     values.put(entry.getKey(), entry.getValue());
                 }
 
                 values.put("id", new StringTag(block.getNbtId()));
-                values.put("x", new IntTag(x));
-                values.put("y", new IntTag(y));
-                values.put("z", new IntTag(z));
-
-                CompoundTag tileEntityTag = new CompoundTag(values);
-                tileEntities.add(tileEntityTag);
             }
+            values.put("x", new IntTag(x));
+            values.put("y", new IntTag(y));
+            values.put("z", new IntTag(z));
+
+            CompoundTag tileEntityTag = new CompoundTag(values);
+            tileEntities.add(tileEntityTag);
         }
 
         schematic.put("Blocks", new ByteArrayTag(blocks));

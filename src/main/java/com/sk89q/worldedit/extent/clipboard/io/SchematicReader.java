@@ -27,6 +27,8 @@ import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.block.Block;
+
 import com.sk89q.jnbt.ByteArrayTag;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.IntTag;
@@ -205,7 +207,26 @@ public class SchematicReader implements ClipboardReader {
                 for (int z = 0; z < length; ++z) {
                     int index = y * width * length + z * width + x;
                     BlockVector pt = new BlockVector(x, y, z);
-                    BaseBlock block = new BaseBlock(blocks[index], blockData[index]);
+
+                    short bId = blocks[index];
+                    if (tileEntitiesMap.containsKey(pt)) {
+                        var tileEntity = tileEntitiesMap.get(pt);
+                        if (tileEntity.containsKey("blockName")) {
+                            bId = (short) Block.blockRegistry.getIDForObject(
+                                Block.blockRegistry.getObject(
+                                    tileEntity.get("blockName")
+                                        .getValue()));
+                            System.out.println(
+                                tileEntity.get("blockName")
+                                    .getValue() + Short.toString(bId));
+                            tileEntity.remove("blockName");
+                            if (tileEntity.size() == 3) {
+                                tileEntitiesMap.remove(pt);
+                            }
+                        }
+                    }
+
+                    BaseBlock block = new BaseBlock(bId, blockData[index]);
 
                     if (tileEntitiesMap.containsKey(pt)) {
                         block.setNbtData(new CompoundTag(tileEntitiesMap.get(pt)));
