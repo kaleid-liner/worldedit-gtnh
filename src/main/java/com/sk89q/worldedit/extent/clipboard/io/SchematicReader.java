@@ -31,8 +31,10 @@ import net.minecraft.block.Block;
 
 import com.sk89q.jnbt.ByteArrayTag;
 import com.sk89q.jnbt.CompoundTag;
+import com.sk89q.jnbt.CompoundTagBuilder;
 import com.sk89q.jnbt.IntTag;
 import com.sk89q.jnbt.ListTag;
+import com.sk89q.jnbt.ListTagBuilder;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NamedTag;
 import com.sk89q.jnbt.ShortTag;
@@ -216,13 +218,30 @@ public class SchematicReader implements ClipboardReader {
                                 Block.blockRegistry.getObject(
                                     tileEntity.get("blockName")
                                         .getValue()));
-                            System.out.println(
-                                tileEntity.get("blockName")
-                                    .getValue() + Short.toString(bId));
                             tileEntity.remove("blockName");
                             if (tileEntity.size() == 3) {
                                 tileEntitiesMap.remove(pt);
                             }
+                        }
+                        // fix carpenters block
+                        if (tileEntity.containsKey("cbAttrList")) {
+                            var cbAttrListBuilder = ListTagBuilder.create(CompoundTag.class);
+                            for (Tag tag : ((ListTag) tileEntity.get("cbAttrList")).getValue()) {
+                                var cbMapBuilder = CompoundTagBuilder.create();
+                                var cbMap = ((CompoundTag) tag).getValue();
+                                for (var entry : cbMap.entrySet()) {
+                                    cbMapBuilder.put(entry.getKey(), entry.getValue());
+                                }
+                                if (cbMap.containsKey("cbUniqueId")) {
+                                    short cbId = (short) Block.blockRegistry.getIDForObject(
+                                        Block.blockRegistry.getObject(
+                                            cbMap.get("cbUniqueId")
+                                                .getValue()));
+                                    cbMapBuilder.putShort("id", cbId);
+                                }
+                                cbAttrListBuilder.add(cbMapBuilder.build());
+                            }
+                            tileEntity.put("cbAttrList", cbAttrListBuilder.build());
                         }
                     }
 
